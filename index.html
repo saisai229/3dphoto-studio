@@ -325,7 +325,19 @@
     width: 100%;
     max-width: 1000px;
   }
-  .customer .photo-wrap { width: min(80%, 600px); }
+  .customer .photo-wrap { width: min(80%, 600px); z-index: 2; }
+  .ar-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+    z-index: 0;
+  }
+  .stage.ar-active .ar-video { display: block; }
+  .stage.ar-active .rain,
+  .stage.ar-active #customerParticles { z-index: 3; }
   .customer-tools {
     display: flex;
     gap: 10px;
@@ -559,6 +571,7 @@
     <button class="admin-trigger" type="button" onclick="openAdminPanel()" title="Admin Panel" aria-label="Admin Panel">⚙</button>
   </div>
   <div class="stage" id="customerStage">
+    <video class="ar-video" id="arCameraFeed" autoplay playsinline muted></video>
     <div class="photo-wrap" id="customerWrap">
       <img class="photo" id="customerPhoto" alt="Customer photo">
       <div class="empty" id="customerEmpty">
@@ -570,7 +583,8 @@
     <div id="customerParticles"></div>
   </div>
   <div class="customer-tools">
-    <button class="btn gold" onclick="toggleMusic()">♫ Music Play / Pause</button>
+    <button class="btn gold" id="arCameraBtn" type="button" onclick="toggleARCamera()">📷 Open 3D VR Camera</button>
+    <button class="btn" onclick="toggleMusic()">♫ Music Play / Pause</button>
     <button class="btn" onclick="shareDesign()">Share Design</button>
   </div>
 </div>
@@ -609,7 +623,7 @@
 <script>
 const $ = id => document.getElementById(id);
 let effect = 'raised', photoData = '', musicData = '', isPointerInteracting = false;
-
+let arStream = null, arActive = false, baseAlpha = null, baseBeta = null;
 const names = {
   raised: 'Raised 3D',
   inset: 'Inset 3D',
@@ -951,9 +965,9 @@ function shareDesign() {
 $('designName').oninput = apply;
 
 // 3D Tilt Pointer Tracking on BOTH Live Stage and Customer Stage
-function move(x, y) {
+function move(x, y, tx = 0, ty = 0) {
   let r = +$('rotation').value, d = +$('depth').value;
-  let transform = `rotateX(${-y * r}deg) rotateY(${x * r}deg) translateZ(${d / 5}px)`;
+  let transform = `translate3d(${tx}px, ${ty}px, ${d / 3 + 20}px) rotateX(${-y * r}deg) rotateY(${x * r}deg)`;
   $('photoWrap').style.transform = transform;
   $('customerWrap').style.transform = transform;
 }
@@ -962,40 +976,109 @@ function attachStageTilt(stageEl) {
   stageEl.addEventListener('pointermove', e => {
     isPointerInteracting = true;
     let r = stageEl.getBoundingClientRect();
-    move((e.clientX - r.left) / r.width - .5, (e.clientY - r.top) / r.height - .5);
+    let nx = (e.clientX - r.left) / r.width - .5;
+    let ny = (e.clientY - r.top) / r.height - .5;
+    move(nx, ny, nx * 28, ny * 28);
   });
   stageEl.addEventListener('pointerleave', () => {
     isPointerInteracting = false;
-    move(0, 0);
+    move(0, 0, 0, 0);
   });
 }
 attachStageTilt($('stage'));
 attachStageTilt($('customerStage'));
 
+// VR/AR Live Camera & Gyroscope Spatial Tracking
+function handleDeviceMotion(e) {
+  if (!$('sensor').checked && !arActive) return;
+  if (e.gamma === null && e.beta === null) return;
+
+  if (arActive) {
+    if (baseBeta === null && e.beta !== null) baseBeta = e.beta;
+    const rawX = Math.max(-1, Math.min(1, (e.gamma || 0) / 30));
+    const deltaBeta = e.beta !== null && baseBeta !== null ? (e.beta - baseBeta) : (e.beta || 0);
+    const rawY = Math.max(-1, Math.min(1, deltaBeta / 30));
+    // Spatial VR parallax: photo floats in 3D space as phone rotates
+    move(rawX * 1.4, rawY * 1.4, -rawX * 45, -rawY * 45);
+  } else {
+    move(
+      Math.max(-1, Math.min(1, (e.gamma || 0) / 35)),
+      Math.max(-1, Math.min(1, (e.beta || 0) / 35)),
+      0,
+      0
+    );
+  }
+}
+window.addEventListener('deviceorientation', handleDeviceMotion);
+
+async function enableGyroSensor() {
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const res = await DeviceOrientationEvent.requestPermission();
+      return res === 'granted';
+    } catch (e) {
+      return false;
+    }
+  }
+  return true;
+}
+
+async function toggleARCamera() {
+  if (arActive) {
+    stopARCamera();
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('Camera is not supported on this browser.');
+    return;
+  }
+  try {
+    await enableGyroSensor();
+    arStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } },
+      audio: false
+    });
+    const videoEl = $('arCameraFeed');
+    videoEl.srcObject = arStream;
+    await videoEl.play();
+    arActive = true;
+    baseAlpha = null;
+    baseBeta = null;
+    $('customerStage').classList.add('ar-active');
+    $('arCameraBtn').textContent = '✕ Close VR Camera';
+    showToast('3D VR Camera active — move your phone around!');
+  } catch (err) {
+    showToast('Please allow camera permission for 3D VR view.');
+  }
+}
+
+function stopARCamera() {
+  if (arStream) {
+    arStream.getTracks().forEach(t => t.stop());
+    arStream = null;
+  }
+  arActive = false;
+  baseAlpha = null;
+  baseBeta = null;
+  $('arCameraFeed').srcObject = null;
+  $('customerStage').classList.remove('ar-active');
+  $('arCameraBtn').textContent = '📷 Open 3D VR Camera';
+  move(0, 0, 0, 0);
+}
+
 // Mobile Motion Gyroscope Sensor
 $('sensor').onchange = async () => {
   if (!$('sensor').checked) return;
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    try {
-      if (await DeviceOrientationEvent.requestPermission() !== 'granted') throw Error();
-    } catch (e) {
-      showToast('Motion permission not granted.');
-      $('sensor').checked = false;
-      return;
-    }
+  const granted = await enableGyroSensor();
+  if (!granted) {
+    showToast('Motion permission not granted.');
+    $('sensor').checked = false;
   }
-  window.addEventListener('deviceorientation', e => {
-    if (!$('sensor').checked) return;
-    move(
-      Math.max(-1, Math.min(1, (e.gamma || 0) / 35)),
-      Math.max(-1, Math.min(1, (e.beta || 0) / 35))
-    );
-  });
 };
 
 // Continuous Smooth Auto-Motion Loop
 function animate() {
-  if ($('autoMotion').checked && !$('sensor').checked && !isPointerInteracting) {
+  if ($('autoMotion').checked && !$('sensor').checked && !arActive && !isPointerInteracting) {
     let a = Math.sin(Date.now() / 1000 * +$('speed').value / 5) * 2;
     let t = `rotateX(${a}deg) rotateY(${a * 1.5}deg) translateZ(${+$('depth').value / 5}px)`;
     $('photoWrap').style.transform = t;
