@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D Effect Studio</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #08090d;
+    --panel: #13151d;
+    --gold: #d9b66f;
+    --muted: #9295a1;
+  }
+  body {
+    background: var(--bg);
+    color: white;
+    font-family: Arial, sans-serif;
+    overflow-x: hidden;
+  }
+  button, input { font: inherit; }
+  button { cursor: pointer; }
+  .app { max-width: 1400px; margin: auto; padding: 20px; }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    flex-wrap: wrap;
+    padding: 15px 0 25px;
+    border-bottom: 1px solid #ffffff18;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, #f4dda5, #a57b39);
+    color: #17120a;
+    display: grid;
+    place-items: center;
+    font-size: 22px;
+    font-weight: bold;
+  }
+  .logo h1 { font-size: 18px; letter-spacing: 1px; }
+  .logo small { display: block; color: var(--gold); font-size: 9px; letter-spacing: 3px; margin-top: 5px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    padding: 11px 15px;
+    border: 1px solid #ffffff20;
+    border-radius: 9px;
+    background: #1b1d26;
+    color: white;
+    font-size: 12px;
+    transition: border-color .2s, transform .1s;
+  }
+  .btn:hover { border-color: var(--gold); }
+  .btn:active { transform: scale(.98); }
+  .gold {
+    background: linear-gradient(135deg, #f1d89f, #b48b4b);
+    color: #17120a;
+    border: 0;
+    font-weight: bold;
+  }
+
+  /* Hero */
+  .hero { padding: 30px 0; }
+  .hero small { color: var(--gold); letter-spacing: 3px; font-size: 10px; }
+  .hero h2 { font-size: clamp(26px, 4vw, 38px); margin: 10px 0; }
+  .hero p { color: var(--muted); font-size: 13px; line-height: 1.7; }
+
+  /* Workspace Layout */
+  .layout {
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid #ffffff16;
+    border-radius: 16px;
+    padding: 19px;
+  }
+  .panel-title {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 20px;
+  }
+  .section { margin-bottom: 24px; }
+  .section h3 {
+    color: var(--gold);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    margin-bottom: 13px;
+  }
+
+  /* Upload & Drag Drop */
+  .upload {
+    display: block;
+    border: 1px dashed #766c58;
+    border-radius: 12px;
+    padding: 22px;
+    text-align: center;
+    background: #191a20;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+  }
+  .upload:hover, .upload.dragover {
+    border-color: var(--gold);
+    background: #23201b;
+  }
+  .upload b { font-size: 27px; display: block; margin-bottom: 8px; }
+  .upload p { font-size: 12px; }
+  .upload small { color: var(--muted); display: block; margin-top: 7px; }
+  input[type=file] { display: none; }
+
+  .sample-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  .sample-btn {
+    background: transparent;
+    border: 1px solid #ffffff1a;
+    color: var(--gold);
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    transition: background .2s, border-color .2s;
+  }
+  .sample-btn:hover {
+    background: #2a2419;
+    border-color: var(--gold);
+  }
+
+  /* Controls & Sliders */
+  .field { margin: 15px 0; }
+  .field label {
+    display: flex;
+    justify-content: space-between;
+    color: #c4c6cf;
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+  input[type=range] { width: 100%; accent-color: var(--gold); }
+  input[type=text] {
+    width: 100%;
+    padding: 11px;
+    background: #1b1e27;
+    color: white;
+    border: 1px solid #ffffff18;
+    border-radius: 9px;
+  }
+  input[type=text]:focus { outline: none; border-color: var(--gold); }
+  input[type=color] { width: 100%; height: 35px; background: none; border: 0; cursor: pointer; }
+
+  /* 12 Effects Grid */
+  .effects { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .effect {
+    padding: 12px 5px;
+    border: 1px solid #ffffff15;
+    border-radius: 10px;
+    background: #191c24;
+    color: #ddd;
+    font-size: 11px;
+    transition: border-color .2s, background .2s, color .2s;
+  }
+  .effect:hover { border-color: #ffffff35; }
+  .effect span { display: block; font-size: 20px; margin-bottom: 7px; }
+  .effect.active {
+    border-color: var(--gold);
+    background: #332a1b;
+    color: #f4d79e;
+  }
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #ccc;
+    font-size: 12px;
+    margin: 12px 0;
+    cursor: pointer;
+  }
+  .check input { accent-color: var(--gold); }
+
+  /* 3D Preview Stage */
+  .stage {
+    position: relative;
+    width: 100%;
+    height: 440px;
+    overflow: hidden;
+    border-radius: 15px;
+    background: radial-gradient(ellipse at center, #302c30, #0c0d12 75%);
+    border: 1px solid #ffffff18;
+    display: grid;
+    place-items: center;
+    perspective: 1000px;
+    touch-action: none;
+  }
+  .stage.dragover {
+    border-color: var(--gold);
+    box-shadow: inset 0 0 30px #d9b66f33;
+  }
+  .photo-wrap {
+    position: relative;
+    width: min(75%, 390px);
+    height: 82%;
+    display: grid;
+    place-items: center;
+    transform-style: preserve-3d;
+    transition: transform .15s ease-out;
+  }
+  .photo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 12px;
+    display: none;
+    transition: filter .4s, box-shadow .4s;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .empty { text-align: center; color: #aaa; padding: 16px; }
+  .empty span { font-size: 48px; display: block; margin-bottom: 12px; }
+  .empty p { font-size: 12px; }
+
+  /* Rain & Particles Overlays */
+  .rain {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: none;
+    background: repeating-linear-gradient(110deg, transparent 0 32px, #ffffff35 33px, transparent 35px 60px);
+    animation: rain .5s linear infinite;
+  }
+  @keyframes rain { to { background-position: 0 60px; } }
+  #particles, #customerParticles { position: absolute; inset: 0; pointer-events: none; }
+  .particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #f5dca7;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #f5dca7;
+    animation: float 4s infinite ease-in-out;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); opacity: .2; }
+    50% { transform: translateY(-35px); opacity: 1; }
+  }
+  @keyframes bob {
+    0%, 100% { translate: 0 0; }
+    50% { translate: 0 -12px; }
+  }
+  @keyframes zoom {
+    0%, 100% { scale: 1; }
+    50% { scale: 1.06; }
+  }
+
+  .preview-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 13px;
+  }
+  .preview-top h3 { font-size: 13px; }
+  .preview-top small { color: var(--muted); font-size: 10px; }
+  .preview-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .preview-controls small { color: var(--muted); }
+  .bottom { text-align: center; color: #777; font-size: 10px; margin-top: 22px; }
+
+  /* Fullscreen Customer View */
+  .customer {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: #07080d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 15px;
+  }
+  .customer.hidden { display: none; }
+  .customer-header {
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    gap: 10px;
+  }
+  .admin-trigger {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid #ffffff25;
+    background: #13151d;
+    color: var(--gold);
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+    transition: border-color .2s, background .2s, transform .15s;
+  }
+  .admin-trigger:hover {
+    border-color: var(--gold);
+    background: #23201b;
+    transform: rotate(25deg);
+  }
+  .customer .stage {
+    height: min(76vh, 750px);
+    width: 100%;
+    max-width: 1000px;
+  }
+  .customer .photo-wrap { width: min(80%, 600px); }
+  .customer-tools {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .app { display: none; }
+  .app.show { display: block; }
+
+  /* Toast & Custom Modals */
+  .toast-box {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1b1d26;
+    border: 1px solid var(--gold);
+    color: #f4d79e;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 12px;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s, transform .25s;
+    box-shadow: 0 10px 30px #000c;
+  }
+  .toast-box.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: #000000b8;
+    z-index: 40;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-card {
+    background: var(--panel);
+    border: 1px solid #ffffff22;
+    border-radius: 14px;
+    padding: 20px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+  }
+  .modal-card h4 { color: var(--gold); font-size: 14px; margin-bottom: 8px; }
+  .modal-card p { color: #ccc; font-size: 12px; margin-bottom: 18px; line-height: 1.5; }
+  .modal-card input[type=password] {
+    width: 100%;
+    padding: 11px;
+    background: #1b1e27;
+    color: white;
+    border: 1px solid #ffffff25;
+    border-radius: 9px;
+    text-align: center;
+    font-size: 18px;
+    letter-spacing: 6px;
+    margin-bottom: 10px;
+  }
+  .modal-card input[type=password]:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+  .pin-error {
+    color: #ff6b6b;
+    font-size: 11px;
+    min-height: 16px;
+    margin-bottom: 12px;
+  }
+  .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+  @media(max-width:850px) {
+    .layout { grid-template-columns: 1fr; }
+    .stage { height: 380px; }
+  }
+  @media(max-width:480px) {
+    .app { padding: 14px; }
+    .stage { height: 340px; }
+    .panel { padding: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="admin">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">3D</div>
+      <div>
+        <h1>3D EFFECT STUDIO</h1>
+        <small>ADMIN PANEL • CREATE &amp; DESIGN</small>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="openResetModal()">Reset</button>
+      <button class="btn" onclick="customerView()">← Customer View</button>
+      <button class="btn gold" onclick="saveSettings()">Save Design</button>
+    </div>
+  </header>
+
+  <div class="hero">
+    <small>PREMIUM CREATIVE WORKSPACE</small>
+    <h2>Bring Your Photos To Life.</h2>
+    <p>Upload your photo, customize stunning 3D effects and create an immersive visual experience.</p>
+  </div>
+
+  <div class="layout">
+    <aside class="panel">
+      <div class="panel-title">
+        <span>DESIGN SETTINGS</span>
+        <span style="color:var(--gold)">● LIVE</span>
+      </div>
+
+      <!-- 01 Upload Photo -->
+      <div class="section">
+        <h3>01 — UPLOAD PHOTO</h3>
+        <label class="upload" id="photoDropzone" for="photoInput">
+          <b>＋</b>
+          <p>Click or drag &amp; drop your photo</p>
+          <small>JPG / PNG / WEBP</small>
+        </label>
+        <input id="photoInput" type="file" accept="image/*">
+        <div class="sample-row">
+          <button type="button" class="sample-btn" onclick="loadSamplePhoto()">✦ Try Sample Artwork</button>
+        </div>
+      </div>
+
+      <!-- 02 Choose 3D Effect -->
+      <div class="section">
+        <h3>02 — CHOOSE 3D EFFECT</h3>
+        <div class="effects" id="effects">
+          <button class="effect active" data-effect="raised"><span>◈</span>Raised 3D</button>
+          <button class="effect" data-effect="inset"><span>▣</span>Inset 3D</button>
+          <button class="effect" data-effect="parallax"><span>✧</span>Parallax</button>
+          <button class="effect" data-effect="glass"><span>◇</span>Glass</button>
+          <button class="effect" data-effect="rain"><span>☂</span>Rain Drops</button>
+          <button class="effect" data-effect="water"><span>≈</span>Water</button>
+          <button class="effect" data-effect="glow"><span>✦</span>Glow</button>
+          <button class="effect" data-effect="float"><span>↟</span>Floating</button>
+          <button class="effect" data-effect="tilt"><span>⟳</span>Tilt Motion</button>
+          <button class="effect" data-effect="zoom"><span>⌕</span>Cinematic Zoom</button>
+          <button class="effect" data-effect="particles"><span>✺</span>Particles</button>
+          <button class="effect" data-effect="shadow"><span>◐</span>Deep Shadow</button>
+        </div>
+      </div>
+
+      <!-- 03 3D Customization -->
+      <div class="section">
+        <h3>03 — 3D CUSTOMIZATION</h3>
+        <div class="field"><label>Depth <b id="depthVal">50</b></label><input id="depth" type="range" min="0" max="100" value="50"></div>
+        <div class="field"><label>Rotation <b id="rotationVal">10°</b></label><input id="rotation" type="range" min="0" max="40" value="10"></div>
+        <div class="field"><label>Zoom <b id="zoomVal">1.0x</b></label><input id="zoom" type="range" min="50" max="200" value="100"></div>
+        <div class="field"><label>Animation Speed <b id="speedVal">5</b></label><input id="speed" type="range" min="1" max="10" value="5"></div>
+      </div>
+
+      <!-- 04 Appearance -->
+      <div class="section">
+        <h3>04 — APPEARANCE</h3>
+        <div class="field"><label>Background Color</label><input id="bgColor" type="color" value="#17131c"></div>
+        <label class="check"><input type="checkbox" id="autoMotion" checked> Enable Auto Motion</label>
+        <label class="check"><input type="checkbox" id="sensor"> Enable Mobile Motion</label>
+      </div>
+
+      <!-- 05 Background Music -->
+      <div class="section">
+        <h3>05 — BACKGROUND MUSIC</h3>
+        <label class="upload" for="musicInput">
+          <b>♫</b>
+          <p>Upload Your Music</p>
+          <small id="musicFileName">MP3 / WAV</small>
+        </label>
+        <input id="musicInput" type="file" accept="audio/*">
+        <div class="field"><label>Music Volume <b id="volumeVal">50%</b></label><input id="volume" type="range" min="0" max="100" value="50"></div>
+        <div class="actions">
+          <button class="btn" onclick="playMusic()">▶ Play</button>
+          <button class="btn" onclick="pauseMusic()">Ⅱ Pause</button>
+        </div>
+      </div>
+
+      <!-- 06 Design Name -->
+      <div class="section">
+        <h3>06 — DESIGN NAME</h3>
+        <input id="designName" type="text" placeholder="Enter design name">
+      </div>
+
+      <button class="btn gold" style="width:100%" onclick="saveSettings()">SAVE DESIGN SETTINGS</button>
+    </aside>
+
+    <!-- Live Preview Column -->
+    <main>
+      <div class="preview-top">
+        <h3>LIVE 3D PREVIEW</h3>
+        <small>REAL-TIME EXPERIENCE</small>
+      </div>
+      <div class="stage" id="stage">
+        <div class="photo-wrap" id="photoWrap">
+          <img class="photo" id="photo" alt="Uploaded photo">
+          <div class="empty" id="empty">
+            <span>✧</span>
+            <p>Upload or drop a photo to start your 3D experience</p>
+          </div>
+        </div>
+        <div class="rain" id="rain"></div>
+        <div id="particles"></div>
+      </div>
+      <div class="preview-controls">
+        <small id="effectStatus">Active Effect: Raised 3D</small>
+        <div class="actions">
+          <button class="btn" onclick="document.getElementById('photoInput').click()">＋ Change Photo</button>
+          <button class="btn gold" onclick="customerView()">Done &amp; View Customer Screen ↗</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="bottom">3D EFFECT STUDIO © 2026 — PREMIUM CREATIVE EXPERIENCE</div>
+</div>
+
+<!-- Default Fullscreen Customer View -->
+<div class="customer" id="customer">
+  <div class="customer-header">
+    <div style="width:38px"></div>
+    <h2 id="customerTitle" style="color:var(--gold);margin:0;text-align:center">3D EFFECT STUDIO</h2>
+    <button class="admin-trigger" type="button" onclick="openAdminPanel()" title="Admin Panel" aria-label="Admin Panel">⚙</button>
+  </div>
+  <div class="stage" id="customerStage">
+    <div class="photo-wrap" id="customerWrap">
+      <img class="photo" id="customerPhoto" alt="Customer photo">
+      <div class="empty" id="customerEmpty">
+        <span>✧</span>
+        <p>Tap ⚙ Admin Panel at the top right to upload photo &amp; customize</p>
+      </div>
+    </div>
+    <div class="rain" id="customerRain"></div>
+    <div id="customerParticles"></div>
+  </div>
+  <div class="customer-tools">
+    <button class="btn gold" onclick="toggleMusic()">♫ Music Play / Pause</button>
+    <button class="btn" onclick="shareDesign()">Share Design</button>
+  </div>
+</div>
+
+<!-- Custom Toast Notification -->
+<div class="toast-box" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Admin Password Modal -->
+<div class="modal-backdrop" id="passwordModal">
+  <div class="modal-card">
+    <h4>ADMIN PANEL ACCESS</h4>
+    <p>Enter Admin Password to open settings</p>
+    <input id="adminPinInput" type="password" inputmode="numeric" maxlength="10" placeholder="••••" onkeydown="if(event.key==='Enter') verifyAdminPin()">
+    <div class="pin-error" id="pinError"></div>
+    <div class="modal-actions">
+      <button class="btn" type="button" onclick="closePasswordModal()">Cancel</button>
+      <button class="btn gold" type="button" onclick="verifyAdminPin()">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Reset Confirmation Modal -->
+<div class="modal-backdrop" id="resetModal">
+  <div class="modal-card">
+    <h4>RESET WORKSPACE</h4>
+    <p>Reset all settings, uploaded photo, and saved browser design?</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeResetModal()">Cancel</button>
+      <button class="btn gold" onclick="confirmResetAll()">Reset All</button>
+    </div>
+  </div>
+</div>
+
+<audio id="music" loop></audio>
+
+<script>
+const $ = id => document.getElementById(id);
+let effect = 'raised', photoData = '', musicData = '', isPointerInteracting = false;
+
+const names = {
+  raised: 'Raised 3D',
+  inset: 'Inset 3D',
+  parallax: 'Parallax',
+  glass: 'Glass',
+  rain: 'Rain Drops',
+  water: 'Water',
+  glow: 'Glow',
+  float: 'Floating',
+  tilt: 'Tilt Motion',
+  zoom: 'Cinematic Zoom',
+  particles: 'Particles',
+  shadow: 'Deep Shadow'
+};
+
+// Non-blocking toast notification helper
+let toastTimer = null;
+function showToast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// Display photo across both Live Preview and Customer View
+function setPhotoSource(dataUrl) {
+  photoData = dataUrl;
+  $('photo').src = photoData;
+  $('photo').style.display = 'block';
+  $('empty').style.display = 'none';
+  $('customerPhoto').src = photoData;
+  $('customerPhoto').style.display = 'block';
+  $('customerEmpty').style.display = 'none';
+  apply();
+}
+
+function uploadPhoto(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return showToast('Please select a valid image file.');
+  const reader = new FileReader();
+  reader.onload = () => setPhotoSource(reader.result);
+  reader.readAsDataURL(file);
+}
+
+$('photoInput').onchange = e => uploadPhoto(e.target.files[0]);
+
+// Built-in SVG Sample Artwork so users can test 3D effects immediately
+function loadSamplePhoto() {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#1e1b29"/>
+        <stop offset="50%" stop-color="#2e2318"/>
+        <stop offset="100%" stop-color="#0d0f17"/>
+      </linearGradient>
+      <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#f7e3b2"/>
+        <stop offset="50%" stop-color="#d9b66f"/>
+        <stop offset="100%" stop-color="#8c6529"/>
+      </linearGradient>
+      <radialGradient id="orb" cx="50%" cy="42%" r="45%">
+        <stop offset="0%" stop-color="#f4dda5" stop-opacity="0.45"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <rect width="800" height="1000" fill="url(#bg)"/>
+    <circle cx="400" cy="420" r="340" fill="url(#orb)"/>
+    <polygon points="400,170 610,490 400,810 190,490" fill="none" stroke="url(#gold)" stroke-width="6"/>
+    <polygon points="400,235 555,490 400,745 245,490" fill="#17141d" stroke="#f4dda5" stroke-width="2" opacity="0.9"/>
+    <circle cx="400" cy="490" r="95" fill="url(#gold)"/>
+    <circle cx="400" cy="490" r="68" fill="#13151d"/>
+    <text x="400" y="502" text-anchor="middle" fill="#f4dda5" font-family="Arial, sans-serif" font-size="34" font-weight="bold" letter-spacing="4">3D</text>
+    <text x="400" y="885" text-anchor="middle" fill="#d9b66f" font-family="Arial, sans-serif" font-size="20" letter-spacing="8">STUDIO EDITION</text>
+  </svg>`;
+  const encoded = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  setPhotoSource(encoded);
+  showToast('Sample artwork loaded.');
+}
+
+// Drag-and-drop support on both dropzone and preview stage
+function bindDropZone(el) {
+  ['dragenter', 'dragover'].forEach(evt => {
+    el.addEventListener(evt, e => {
+      e.preventDefault();
+      el.classList.add('dragover');
+    });
+  });
+  ['dragleave', 'drop'].forEach(evt => {
+    el.addEventListener(evt, e => {
+      e.preventDefault();
+      el.classList.remove('dragover');
+    });
+  });
+  el.addEventListener('drop', e => {
+    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) uploadPhoto(file);
+  });
+}
+bindDropZone($('photoDropzone'));
+bindDropZone($('stage'));
+
+// Music Upload
+$('musicInput').onchange = e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (!f.type.startsWith('audio/')) return showToast('Please select a valid audio file.');
+  const reader = new FileReader();
+  reader.onload = () => {
+    musicData = reader.result;
+    $('music').src = musicData;
+    $('musicFileName').textContent = f.name;
+    showToast('Music uploaded. Press Play.');
+  };
+  reader.readAsDataURL(f);
+};
+
+// Effect Selection
+document.querySelectorAll('.effect').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.effect').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  effect = b.dataset.effect;
+  apply();
+});
+
+// Range Sliders
+['depth', 'rotation', 'zoom', 'speed', 'volume'].forEach(id => {
+  $(id).oninput = () => {
+    let v = $(id).value;
+    $(id + 'Val').textContent = id === 'rotation' ? v + '°' : id === 'zoom' ? (v / 100).toFixed(1) + 'x' : id === 'volume' ? v + '%' : v;
+    if (id === 'volume') $('music').volume = v / 100;
+    apply();
+  };
+});
+
+// Background Color
+$('bgColor').oninput = () => {
+  $('stage').style.background = $('bgColor').value;
+  $('customerStage').style.background = $('bgColor').value;
+};
+
+// Generate Golden Particles
+function particles(el) {
+  el.innerHTML = '';
+  for (let i = 0; i < 30; i++) {
+    let p = document.createElement('i');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    p.style.animationDelay = Math.random() * 4 + 's';
+    el.appendChild(p);
+  }
+}
+particles($('particles'));
+particles($('customerParticles'));
+
+// Apply Selected 3D Effect Styles
+function imageEffect(img) {
+  if (!img.src) return;
+  let d = +$('depth').value, z = +$('zoom').value / 100;
+  img.style.animation = 'none';
+  img.style.filter = 'none';
+  img.style.transform = `scale(${z})`;
+  img.style.boxShadow = '0 20px 55px #0009';
+
+  switch (effect) {
+    case 'raised':
+      img.style.transform = `translateZ(${d / 2}px) scale(${z})`;
+      img.style.boxShadow = `0 ${d / 3 + 10}px ${d + 20}px #000b`;
+      break;
+    case 'inset':
+      img.style.transform = `translateZ(-${d / 3}px) scale(${z * .96})`;
+      img.style.filter = 'brightness(.8)';
+      break;
+    case 'glass':
+      img.style.filter = 'brightness(1.15) saturate(.8)';
+      img.style.boxShadow = '0 0 35px #b7dfff88';
+      break;
+    case 'water':
+      img.style.filter = 'saturate(1.5) contrast(1.1)';
+      break;
+    case 'glow':
+      img.style.boxShadow = `0 0 ${d + 20}px #e5c17c`;
+      break;
+    case 'shadow':
+      img.style.boxShadow = `0 ${d / 2 + 20}px ${d + 30}px #000`;
+      break;
+    case 'float':
+      img.style.animation = `bob ${Math.max(.8, 5 - +$('speed').value * .35)}s ease-in-out infinite`;
+      break;
+    case 'zoom':
+      img.style.animation = `zoom ${Math.max(1, 8 - +$('speed').value * .6)}s ease-in-out infinite`;
+      break;
+    case 'parallax':
+    case 'tilt':
+      img.style.filter = 'contrast(1.1) saturate(1.1)';
+      break;
+  }
+}
+
+function apply() {
+  imageEffect($('photo'));
+  imageEffect($('customerPhoto'));
+  $('rain').style.display = effect === 'rain' ? 'block' : 'none';
+  $('customerRain').style.display = effect === 'rain' ? 'block' : 'none';
+  $('particles').style.display = effect === 'particles' ? 'block' : 'none';
+  $('customerParticles').style.display = effect === 'particles' ? 'block' : 'none';
+  $('effectStatus').textContent = 'Active Effect: ' + names[effect];
+  $('customerTitle').textContent = $('designName').value || '3D EFFECT STUDIO';
+}
+
+// Save & Restore via localStorage
+function saveSettings() {
+  const d = {
+    name: $('designName').value,
+    effect,
+    photo: photoData,
+    music: musicData,
+    depth: $('depth').value,
+    rotation: $('rotation').value,
+    zoom: $('zoom').value,
+    speed: $('speed').value,
+    volume: $('volume').value,
+    bg: $('bgColor').value,
+    auto: $('autoMotion').checked,
+    sensor: $('sensor').checked
+  };
+  try {
+    localStorage.setItem('3DStudio', JSON.stringify(d));
+    showToast('Design saved successfully in this browser.');
+  } catch (e) {
+    showToast('Storage limit reached. Use a smaller photo/music file.');
+  }
+}
+
+function restore() {
+  try {
+    const d = JSON.parse(localStorage.getItem('3DStudio') || 'null');
+    if (!d) return;
+    $('designName').value = d.name || '';
+    ['depth', 'rotation', 'zoom', 'speed', 'volume'].forEach(id => {
+      if (d[id]) $(id).value = d[id];
+      $(id).dispatchEvent(new Event('input'));
+    });
+    $('bgColor').value = d.bg || '#17131c';
+    $('autoMotion').checked = d.auto !== false;
+    $('sensor').checked = !!d.sensor;
+    effect = d.effect || 'raised';
+    document.querySelectorAll('.effect').forEach(b => b.classList.toggle('active', b.dataset.effect === effect));
+    if (d.photo) {
+      photoData = d.photo;
+      $('photo').src = d.photo;
+      $('photo').style.display = 'block';
+      $('empty').style.display = 'none';
+      $('customerPhoto').src = d.photo;
+      $('customerPhoto').style.display = 'block';
+      $('customerEmpty').style.display = 'none';
+    }
+    if (d.music) {
+      musicData = d.music;
+      $('music').src = d.music;
+      $('musicFileName').textContent = 'Saved audio track';
+    }
+    $('stage').style.background = $('bgColor').value;
+    $('customerStage').style.background = $('bgColor').value;
+    apply();
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+// Custom Reset Modal Handlers
+function openResetModal() {
+  $('resetModal').classList.add('show');
+}
+function closeResetModal() {
+  $('resetModal').classList.remove('show');
+}
+function confirmResetAll() {
+  localStorage.removeItem('3DStudio');
+  location.reload();
+}
+
+// Audio Controls
+function playMusic() {
+  if (!$('music').src) return showToast('Upload music first.');
+  $('music').play().catch(() => showToast('Tap Play to allow music.'));
+}
+function pauseMusic() { $('music').pause(); }
+function toggleMusic() { if ($('music').paused) playMusic(); else pauseMusic(); }
+
+// Switch between Customer View (Default) and Admin Panel with Password (1234)
+function openAdminPanel() {
+  $('adminPinInput').value = '';
+  $('pinError').textContent = '';
+  $('passwordModal').classList.add('show');
+  setTimeout(() => $('adminPinInput').focus(), 50);
+}
+function closePasswordModal() {
+  $('passwordModal').classList.remove('show');
+}
+function verifyAdminPin() {
+  if ($('adminPinInput').value.trim() === '1234') {
+    closePasswordModal();
+    $('customer').classList.add('hidden');
+    $('admin').classList.add('show');
+    apply();
+  } else {
+    $('pinError').textContent = 'Incorrect password. Please try again.';
+    $('adminPinInput').value = '';
+    $('adminPinInput').focus();
+  }
+}
+function customerView() {
+  $('admin').classList.remove('show');
+  $('customer').classList.remove('hidden');
+  apply();
+}
+function closeCustomer() { customerView(); }
+
+function shareDesign() {
+  if (navigator.share) {
+    navigator.share({ title: $('designName').value || '3D Photo', url: location.href }).catch(() => {});
+  } else {
+    const tempInput = document.createElement('input');
+    tempInput.value = location.href;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    try {
+      document.execCommand('copy');
+      showToast('Design link copied to clipboard.');
+    } catch (e) {
+      showToast('Copy the website URL from your browser.');
+    }
+    document.body.removeChild(tempInput);
+  }
+}
+
+$('designName').oninput = apply;
+
+// 3D Tilt Pointer Tracking on BOTH Live Stage and Customer Stage
+function move(x, y) {
+  let r = +$('rotation').value, d = +$('depth').value;
+  let transform = `rotateX(${-y * r}deg) rotateY(${x * r}deg) translateZ(${d / 5}px)`;
+  $('photoWrap').style.transform = transform;
+  $('customerWrap').style.transform = transform;
+}
+
+function attachStageTilt(stageEl) {
+  stageEl.addEventListener('pointermove', e => {
+    isPointerInteracting = true;
+    let r = stageEl.getBoundingClientRect();
+    move((e.clientX - r.left) / r.width - .5, (e.clientY - r.top) / r.height - .5);
+  });
+  stageEl.addEventListener('pointerleave', () => {
+    isPointerInteracting = false;
+    move(0, 0);
+  });
+}
+attachStageTilt($('stage'));
+attachStageTilt($('customerStage'));
+
+// Mobile Motion Gyroscope Sensor
+$('sensor').onchange = async () => {
+  if (!$('sensor').checked) return;
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      if (await DeviceOrientationEvent.requestPermission() !== 'granted') throw Error();
+    } catch (e) {
+      showToast('Motion permission not granted.');
+      $('sensor').checked = false;
+      return;
+    }
+  }
+  window.addEventListener('deviceorientation', e => {
+    if (!$('sensor').checked) return;
+    move(
+      Math.max(-1, Math.min(1, (e.gamma || 0) / 35)),
+      Math.max(-1, Math.min(1, (e.beta || 0) / 35))
+    );
+  });
+};
+
+// Continuous Smooth Auto-Motion Loop
+function animate() {
+  if ($('autoMotion').checked && !$('sensor').checked && !isPointerInteracting) {
+    let a = Math.sin(Date.now() / 1000 * +$('speed').value / 5) * 2;
+    let t = `rotateX(${a}deg) rotateY(${a * 1.5}deg) translateZ(${+$('depth').value / 5}px)`;
+    $('photoWrap').style.transform = t;
+    $('customerWrap').style.transform = t;
+  }
+  requestAnimationFrame(animate);
+}
+
+restore();
+animate();
+</script>
+</body>
+</html>
